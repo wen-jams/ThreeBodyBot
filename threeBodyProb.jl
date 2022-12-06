@@ -1,6 +1,11 @@
 #!/usr/bin/env julia
 using JSON, Printf, Plots, Plots.Measures, Dates
 
+# The following code has been modified slightly for use in James Wen's PHYS 304 research project. 
+# Most of the changes made are in the getData() function to set the desired initial conditions. 
+# Additional tweaks were made to the main() function and in the plotting section to customize the outputs.
+# The following instructions were written by Kirk Long, the original author.
+
 #INSTRUCTIONS on using this code:
 # 1: check that you have a recent(ish, >1.0) version of Julia installed
 # 2: within Julia, make sure you have the required packages (above, in the "Using..." statement) installed (I think all but JSON comes by default?)
@@ -272,64 +277,90 @@ function getData(nBodies; totalETol = 1e-5, maxIter = 1000, maxTime=60,minYrs=15
             end
         else
             interesting = true
-            m = zeros(nBodies); x = zeros(nBodies); y = zeros(nBodies); vx = zeros(nBodies); vy = zeros(nBodies)
-            for n = 1:nBodies
-                accept = false
-                while accept == false
-                    println("Enter value for m$n (solar masses): ")
-                    input = readline()
-                    try
-                        m[n] = parse(Float64,input)
-                        accept = true
-                    catch
-                        println("Error: could not parse number from input\n")
-                    end
-                end
-                accept = false
-                while accept == false
-                    println("Enter value for x$n (AU from center): ")
-                    input = readline()
-                    try
-                        x[n] = parse(Float64,input)
-                        accept = true
-                    catch
-                        println("Error: could not parse number from input\n")
-                    end
-                end
-                accept = false
-                while accept == false
-                    println("Enter value for y$n (AU from center): ")
-                    input = readline()
-                    try
-                        y[n] = parse(Float64,input)
-                        accept = true
-                    catch
-                        println("Error: could not parse number from input\n")
-                    end
-                end
-                accept = false
-                while accept == false
-                    println("Enter value for vx$n (km/s): ")
-                    input = readline()
-                    try
-                        vx[n] = parse(Float64,input)
-                        accept = true
-                    catch
-                        println("Error: could not parse number from input\n")
-                    end
-                end
-                accept = false
-                while accept == false
-                    println("Enter value for vy$n (km/s): ")
-                    input = readline()
-                    try
-                        vy[n] = parse(Float64,input)
-                        accept = true
-                    catch
-                        println("Error: could not parse number from input\n")
-                    end
-                end
-            end
+
+            #Initial conditions setup -- equilateral triangle
+            m = [100.,100.,100.] #m1=m2=m3
+            x = [10.,-5.,-5.] #three bodies in a triangle with center of mass at the origin
+            y = [0.,8.66025403784439,-8.66025403784439]
+
+            # uncomment the following lines to adjust initial velocities
+
+            # trial with lagrange choreography
+            vx = [0.0,-62.07482333811008,62.07482333811008]
+            vy = [71.67783192831264,-35.83891596415632,-35.83891596415632]
+            
+            #the tangential velocities associated with angular velocity pi/3 rad/yr
+            # Trial 1 - No perturbation
+            # vx = [0.,-43.106875148162835,43.106875148162835]
+            # vy = [49.77553194143079,-24.887765970715394,-24.887765970715394]
+
+            # Trial 4 - 30% increase
+            # vx = [0.,-56.03893769261169,56.03893769261169]
+            # vy = [64.70819152386004,-32.35409576193001,-32.35409576193001]
+
+            # Trial 7 - 60% increase
+            # vx = [0.,-68.97100023706054,68.97100023706054]
+            # vy = [79.64085110628928,-39.82042555314463,-39.82042555314463]
+
+            # Uncomment the following to make the script prompt the user for initial conditions when run.
+            # m = zeros(nBodies); x = zeros(nBodies); y = zeros(nBodies); vx = zeros(nBodies); vy = zeros(nBodies)
+            # for n = 1:nBodies
+            #     accept = false
+            #     while accept == false
+            #         println("Enter value for m$n (solar masses): ")
+            #         input = readline()
+            #         try
+            #             m[n] = parse(Float64,input)
+            #             accept = true
+            #         catch
+            #             println("Error: could not parse number from input\n")
+            #         end
+            #     end
+            #     accept = false
+            #     while accept == false
+            #         println("Enter value for x$n (AU from center): ")
+            #         input = readline()
+            #         try
+            #             x[n] = parse(Float64,input)
+            #             accept = true
+            #         catch
+            #             println("Error: could not parse number from input\n")
+            #         end
+            #     end
+            #     accept = false
+            #     while accept == false
+            #         println("Enter value for y$n (AU from center): ")
+            #         input = readline()
+            #         try
+            #             y[n] = parse(Float64,input)
+            #             accept = true
+            #         catch
+            #             println("Error: could not parse number from input\n")
+            #         end
+            #     end
+            #     accept = false
+            #     while accept == false
+            #         println("Enter value for vx$n (km/s): ")
+            #         input = readline()
+            #         try
+            #             vx[n] = parse(Float64,input)
+            #             accept = true
+            #         catch
+            #             println("Error: could not parse number from input\n")
+            #         end
+            #     end
+            #     accept = false
+            #     while accept == false
+            #         println("Enter value for vy$n (km/s): ")
+            #         input = readline()
+            #         try
+            #             vy[n] = parse(Float64,input)
+            #             accept = true
+            #         catch
+            #             println("Error: could not parse number from input\n")
+            #         end
+            #     end
+            # end
             coords = [x.*1.5e11,y.*1.5e11,vx.*1e3,vy.*1e3]
             coordsRecord[1] = deepcopy(coords)
             rad = m.^0.8
@@ -674,7 +705,7 @@ end
 
 function main(;tweet=nothing,custom=false,maxTime=60,minYrs=15) #pulls everything together, only works for 3 body case (for now...)
     println("sit tight -- finding an interesting solution")
-    coordsRecord, m, rad, nBodies, t, err, collisionBool, collisionInds, escape, escapeInd, speedRecord = getData(3,tweet=tweet,custom=custom,maxTime=maxTime,minYrs=minYrs) #find an interesting solution at least 15 years
+    coordsRecord, m, rad, nBodies, t, err, collisionBool, collisionInds, escape, escapeInd, speedRecord = getData(3,tweet=tweet,custom=custom,maxTime=120,minYrs=minYrs) #find an interesting solution at least 15 years
     m = m[1]; rad = rad[1]; nBodies = nBodies[1] #each of these vars before this are tuples going like (startVal, endVal) and we want the starting ones
     plotData = convertData(coordsRecord,t)
 
@@ -803,7 +834,7 @@ function main(;tweet=nothing,custom=false,maxTime=60,minYrs=15) #pulls everythin
         p=plot!(star3[1]./1.5e11,star3[2]./1.5e11,label="$(@sprintf("%.1f", m[3]./2e30))",color=colors[3],fill=true)
         p=plot!(background_color=:black,background_color_legend=:transparent,foreground_color_legend=:transparent,fontfamily=:Courier,
             background_color_outside=:white,aspect_ratio=:equal,legendtitlefontcolor=:white) #formatting for plot frame
-        title = t[i]/365/24/3600 < 100 ? "Random Three-Body Problem\nt:      years after start" : "Random Three-Body Problem\nt:       years after start"
+        title = t[i]/365/24/3600 < 100 ? "Homographic Three-Body Problem\nt:      years after start" : "Homographic Three-Body Problem\nt:       years after start"
         p=plot!(xlabel="x: AU",ylabel="y: AU",title=title,
             legend=:best,xaxis=("x: AU",(limx[1],limx[2]),font(9,"Courier")),yaxis=("y: AU",(limy[1],limy[2]),font(9,"Courier")),tickfontcolor=:white,
             grid=false,titlefont=font(14,"Courier"),size=(720,721),legendfontsize=8,legendtitle="Mass (in solar masses)",legendtitlefontsize=8) #add in axes/title/legend with formatting
@@ -850,7 +881,7 @@ function main(;tweet=nothing,custom=false,maxTime=60,minYrs=15) #pulls everythin
             p=plot!(star3[1]./1.5e11,star3[2]./1.5e11,label="$(@sprintf("%.1f", m[3]./2e30))",color=colors[3],fill=true)
             p=plot!(background_color=:black,background_color_legend=:transparent,foreground_color_legend=:transparent,
                 background_color_outside=:white,aspect_ratio=:equal,legendtitlefontcolor=:white,fontfamily=:Courier) #formatting for plot frame
-            p=plot!(xlabel="x: AU",ylabel="y: AU",title="Random Three-Body Problem\nt: $(@sprintf("%0.2f",t[end-(sloInd-i)]/365/24/3600)) years after start",
+            p=plot!(xlabel="x: AU",ylabel="y: AU",title="Homographic Three-Body Problem\nt: $(@sprintf("%0.2f",t[end-(sloInd-i)]/365/24/3600)) years after start",
                 legend=:best,xaxis=("x: AU",(limx[1],limx[2]),font(9,"Courier")),yaxis=("y: AU",(limy[1],limy[2]),font(9,"Courier")),
                 grid=false,titlefont=font(14,"Courier"),size=(720,721),legendfontsize=8,legendtitle="Mass (in solar masses)",legendtitlefontsize=8) #add in axes/title/legend with formatting
             #collision cam zoom in
@@ -910,7 +941,7 @@ function main(;tweet=nothing,custom=false,maxTime=60,minYrs=15) #pulls everythin
             p=plot!(star3[1]./1.5e11,star3[2]./1.5e11,label="$(@sprintf("%.1f", m[3]./2e30))",color=colors[3],fill=true)
             p=plot!(background_color=:black,background_color_legend=:transparent,foreground_color_legend=:transparent,
                 background_color_outside=:white,aspect_ratio=:equal,legendtitlefontcolor=:white,fontfamily=:Courier) #formatting for plot frame
-            p=plot!(xlabel="x: AU",ylabel="y: AU",title="Random Three-Body Problem\nt: $(@sprintf("%0.2f",t[end]/365/24/3600)) years after start",
+            p=plot!(xlabel="x: AU",ylabel="y: AU",title="Homographic Three-Body Problem\nt: $(@sprintf("%0.2f",t[end]/365/24/3600)) years after start",
                 legend=:best,xaxis=("x: AU",(limx[1],limx[2]),font(9,"Courier")),yaxis=("y: AU",(limy[1],limy[2]),font(9,"Courier")),
                 grid=false,titlefont=font(14,"Courier"),size=(720,721),legendfontsize=8,legendtitle="Mass (in solar masses)",legendtitlefontsize=8) #add in axes/title/legend with formatting
             #collision cam zoom in
@@ -971,7 +1002,7 @@ function main(;tweet=nothing,custom=false,maxTime=60,minYrs=15) #pulls everythin
             p=plot!(star3[1]./1.5e11,star3[2]./1.5e11,label="$(@sprintf("%.1f", m[3]./2e30))",color=colors[3],fill=true)
             p=plot!(background_color=:black,background_color_legend=:transparent,foreground_color_legend=:transparent,
                 background_color_outside=:white,aspect_ratio=:equal,legendtitlefontcolor=:white,fontfamily=:Courier) #formatting for plot frame
-            p=plot!(xlabel="x: AU",ylabel="y: AU",title="Random Three-Body Problem\nt: $(@sprintf("%0.2f",t[end]/365/24/3600)) years after start",
+            p=plot!(xlabel="x: AU",ylabel="y: AU",title="Homographic Three-Body Problem\nt: $(@sprintf("%0.2f",t[end]/365/24/3600)) years after start",
                 legend=:best,xaxis=("x: AU",(limx[1],limx[2]),font(9,"Courier")),yaxis=("y: AU",(limy[1],limy[2]),font(9,"Courier")),
                 grid=false,titlefont=font(14,"Courier"),size=(720,721),legendfontsize=8,legendtitle="Mass (in solar masses)",legendtitlefontsize=8) #add in axes/title/legend with formatting
 
@@ -991,7 +1022,7 @@ function main(;tweet=nothing,custom=false,maxTime=60,minYrs=15) #pulls everythin
 end
 
 function makeAnim(clean=true; tweet=nothing)
-    run(`ffmpeg -framerate 30 -i "tmpPlots/frame_%06d.png" -c:v libx264 -preset slow -coder 1 -movflags +faststart -g 15 -crf 18 -pix_fmt yuv420p -profile:v high -y -bf 2 -vf "scale=720:720,setdar=1/1" "threeBody.mp4"`)
+    run(`ffmpeg -framerate 30 -i "tmpPlots/frame_%06d.png" -c:v libx264 -preset slow -coder 1 -movflags +faststart -g 15 -crf 18 -pix_fmt yuv420p -profile:v high -y -bf 2 -vf "scale=720:720,setdar=1/1" "lagrange_choreo.mp4"`)
     if clean==true
         println("cleaning up png files")
         foreach(rm,[string("tmpPlots/",x) for x in filter(endswith(".png"),readdir("tmpPlots"))])
@@ -1023,6 +1054,6 @@ function makeAnim(clean=true; tweet=nothing)
     end
 end
 
-main()
-#main(custom=true) # if you want to specify initial conditions
-#makeAnim() #commented out because bot uses shell script to compile frames with music
+#main()
+main(custom=true) # if you want to specify initial conditions
+makeAnim() #commented out because bot uses shell script to compile frames with music
